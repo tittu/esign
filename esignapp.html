@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Your Site</title>
+
+<style>
+body {
+  font-family: Arial;
+
+}
+
+.split {
+  height: 100%; 
+  position: fixed;
+  z-index: 1;
+  top: 0;
+  overflow-x: hidden;
+  padding-top: 20px;
+}
+
+.left {
+  width: 20%;
+  left: 0;
+  background-color: #111;
+  color :white;
+}
+
+.right {
+  width: 80%;
+  right: 0;
+ /* background-color: red;*/
+}
+
+.centered {
+  position: absolute;
+  top: 20%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: left;
+}
+
+ul li {
+  list-style-type:none;
+  align:left;
+  font-size:20px;
+ }
+</style>
+  </head>
+  <body>
+    <!-- And add the code below into the body of your HTML -->
+	
+<div class="split left">
+  <div class="centered">
+     <ul>
+	   <li>Company details</li>
+	   <li>Employee detials</li>
+	   <li>Offer detials</li>
+	   <li>XYSHD</li>
+	   <li>TESTT</li>
+	 </ul>
+  </div>
+</div>
+
+<div class="split right">
+  <div class="centered">
+     <div class="pdfcontainer">
+   
+	  <label>Upload document</label>
+	  <input id="file" type="file"></input>  <br>
+	  <label>Signer Name :: </label><input id="name" type="text"><br>
+	  <label>Signer email :: </label><input id="email" type="text"><br>
+	  <label>Signer City :: </label><input id="city" type="text">	<br>
+	<button  id="esign">esign</button>
+	
+	 </div>
+</div>
+    <div id="zoop-gateway-model">
+      <div id="zoop-model-content">
+	  </div>
+    </div>
+
+	
+	
+    <script src="./zoop-sdk.min.js"></script>
+    <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/2.1.3/jquery.min.js">  
+ </script>  
+ <script type="text/javascript" language="javascript">  
+$(document).ready(function () {
+
+
+	var letters = /^[a-zA-Z\s]+$/;  
+    var email_val = /^([a-zA-Z0-9_\.\-])+\@(([a-zA-Z0-9\-])+\.)+([a-zA-Z0-9]{2,4})+$/; 
+	const gatewayOptions = {
+	  company_display_name: "Prasads Company", //(required)
+	  color_ft: "FFFFFF", //(optional)Add the hex for colour of text of company name
+	  color_bg: "2C3E50", //(optional)Add the hex for background colour to be set for gateway.
+	  logo_url: "https://your-square-product-logo-image-url-here.png", //(required)
+	  otp_mode: "y", // (optional) default value is 'y'
+	  fp_mode: "n", //(optional) default value 'y'
+	  ir_mode: "n", //(optional) default value 'y',
+	  phone_auth: "n", //(optional) default value 'n',
+	  draggable_sign: "y", //(optional) default value ‘n’,
+	  google_sign: "n", //(optional) default value ‘y’
+	  customer_phone: "9999999999", // (optional) phone number to prefill,
+	  mode: "POPUP", // (optional) open gateway in an iframe (POPUP) or in a new tab (TAB)
+	};
+	
+	$("#esign").click(function(){
+	        var jsondata;
+			var base64data;
+            var n = $("#name").val();
+			var e = $("#email").val();
+			var c = $("#city").val();
+			var fileInput = $('#file')[0].files[0];
+			
+		
+			    if(n==''||e==''||c==''||fileInput==''){  
+				  alert("Enter each details correctly");  
+				  }  
+				else if(!letters.test(n))  
+						{  
+							alert('Name is incorrect must contain alphabets only');  
+						}  
+				else if (!email_val.test(e))  
+						{  
+							alert('Invalid email format please enter valid email id');  
+						} 
+						
+		     var reader = new FileReader();
+                reader.readAsDataURL(fileInput);
+               reader.onload = function () {
+             	console.log(reader.result);//base64encoded string
+				 base64data = reader.result;
+			   inputdata = {};inputdata.document = {};
+               inputdata.document.data = base64data;
+               inputdata.document.info = "HR Submission document";
+			   inputdata.document.sign = [{"page_num": 0,"x_coord": 100,"y_coord": 300 }];
+               inputdata.signer_name= n;
+               inputdata.signer_email= e;
+               inputdata.signer_city= c;
+			   inputdata.purpose= "HR Portal submission";
+               inputdata.response_url = "http://example.test.com";
+			   inputdata.redirect_url = "http://example.test.com";
+               inputdata.email_template = {};
+               inputdata.email_template.org_name= "Prasads Organization";	
+			   console.log(inputdata);	 
+                esignInit(inputdata);			   
+			     
+                };
+              reader.onerror = function (error) {
+	           console.log('Error: ', error);
+               };
+			   
+	          		   
+			
+			  
+		
+						
+	});
+	
+	 function esignInit(data){
+	  var fdatabase64Str = JSON.stringify(data).replace("data:application/pdf;base64,","");
+	    console.log(fdatabase64Str);
+	 
+	  $.ajax({
+		   url: "http://localhost:8081/todos/zoop", 
+		   type: "POST",		  
+		   contentType: "application/json",
+		   dataType: 'json',
+		   async:false,
+		   data: fdatabase64Str,		  
+		   statusCode: {
+             500: function(xhr) {
+                   if(window.console) console.log(xhr.responseText);
+                },
+			 200: function(xhr) {
+			     console.log(xhr.responseText);
+			     openGateway(xhr.responseText);
+			  }
+			 }
+		 }); 
+	
+     }  
+      // Name of the this function can be anything you want.
+      function openGateway(reqid) {
+         // To setup gateway UI to mach your application you can
+         // pass the gateway options but the support for it will be
+         // added soon
+         zoop.eSignGatewayInit({
+           mode: "TAB", // default TAB, but choose either of them
+           zoomLevel: 1, // Default: 7, integer between 1 to 7. PDF viewer zoom level.
+         });
+         // Pass the transaction ID created at Init call
+         zoop.eSignGateway(reqid);
+      }
+	  
+	  
+	  });
+    </script>
+  </body>
+</html>
